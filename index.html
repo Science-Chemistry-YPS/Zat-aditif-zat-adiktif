@@ -785,4 +785,192 @@
       const questionText = document.getElementById('question-text'); const optionsPanel = document.getElementById('options-panel');
       const row = Math.floor(cellId / 5); const col = (cellId % 5); const rowLetter = String.fromCharCode(65 + row); const colNumber = col + 1;
       const playerTextColor = currentPlayer === 'X' ? 'text-green-700' : 'text-yellow-800'; const playerBgColor = currentPlayer === 'X' ? 'bg-green-100' : 'bg-yellow-100'; const playerBorderColor = currentPlayer === 'X' ? 'border-green-300' : 'border-yellow-300';
-      questionText.innerHTML = `<div class="flex items-center justify-center gap-3 mb-4"><span class="text-sm bg-white px-4 py-1 rounded-full font-bold border border-gray-200 text-gray-600
+      questionText.innerHTML = `<div class="flex items-center justify-center gap-3 mb-4"><span class="text-sm bg-white px-4 py-1 rounded-full font-bold border border-gray-200 text-gray-600">Kotak ${rowLetter}${colNumber}</span><span class="text-sm ${playerBgColor} ${playerTextColor} px-4 py-1 rounded-full font-bold border ${playerBorderColor} shadow-sm">Giliran ${currentPlayer}</span></div><div class="text-lg text-gray-800 leading-relaxed font-medium bg-white/50 p-4 rounded-xl border border-white">${question.pertanyaan}</div>`;
+      if (!question.pilihan || question.pilihan.length === 0) { optionsPanel.innerHTML = '<p class="text-red-500">Error: Pilihan jawaban tidak tersedia</p>'; modal.classList.remove('hidden'); return; }
+      optionsPanel.innerHTML = question.pilihan.map((pilihan, idx) => `<button onclick="answerQuestion('${pilihan.replace(/'/g, "\\'")}', ${cellId})" class="w-full p-4 bg-white hover:bg-green-50 border-2 border-green-100 hover:border-green-400 rounded-xl text-left font-semibold transition shadow-sm hover:shadow-md transform hover:-translate-y-1 group"><span class="font-bold text-green-600 mr-2 bg-green-100 w-8 h-8 inline-flex items-center justify-center rounded-full group-hover:bg-green-200 transition-colors">${String.fromCharCode(65 + idx)}</span> <span class="text-gray-700">${pilihan}</span></button>`).join('');
+      modal.classList.remove('hidden');
+    }
+
+    function answerQuestion(jawaban, cellId) {
+      const cell = ticTacBoard[cellId]; const question = cell.question; const isCorrect = jawaban === question.jawaban;
+      const modal = document.getElementById('question-modal'); const questionPanel = document.getElementById('question-panel');
+      const nextPlayer = currentPlayer === 'X' ? 'O' : 'X';
+      const currentPlayerColorText = currentPlayer === 'X' ? 'text-green-700' : 'text-yellow-800';
+      const currentPlayerBg = currentPlayer === 'X' ? 'bg-green-100' : 'bg-yellow-100';
+      const nextPlayerColorText = nextPlayer === 'X' ? 'text-green-700' : 'text-yellow-800';
+
+      if (isCorrect) {
+        SoundManager.playCorrect(); cell.value = currentPlayer; cell.answered = true; ticTacScore[currentPlayer]++;
+        const winner = getWinner();
+        if (winner) {
+            SoundManager.playWin(); gameOver = true;
+            questionPanel.innerHTML = `<div class="text-center py-6"><div class="text-7xl mb-4 animate-bounce">🏆</div><p class="text-3xl font-black text-green-600 mb-2">Jawaban Benar!</p><p class="text-xl font-bold mt-4">DAN...</p><div class="bg-yellow-100 p-4 rounded-xl mt-2 border-4 border-yellow-400 shadow-lg"><p class="text-2xl font-black text-yellow-800">PEMAIN ${winner} MENANG!</p><p class="text-sm text-yellow-700">Berhasil menyusun 5 kotak!</p></div></div>`;
+            setTimeout(() => { modal.classList.add('hidden'); renderTicTacBoard(); alert(`🎉 SELAMAT! Pemain ${winner} Menang karena berhasil menyusun 5 kotak! 🎉`); }, 3000);
+        } else {
+            questionPanel.innerHTML = `<div class="text-center py-6"><div class="text-7xl mb-4 animate-bounce">🎉</div><p class="text-3xl font-black text-green-600 mb-2">Benar!</p><div class="bg-white/60 p-4 rounded-xl inline-block mt-2 border border-white"><p class="text-gray-600 text-sm mb-1">Jawaban:</p><p class="font-bold text-gray-800">${question.jawaban}</p></div><p class="mt-6 text-lg ${currentPlayerBg} p-3 rounded-xl inline-block ${currentPlayerColorText} font-bold border-2 border-transparent shadow-sm">Pemain ${currentPlayer} menguasai kotak ini!</p></div>`;
+            if (ticTacBoard.every(c => c.answered)) {
+                 gameOver = true;
+                 setTimeout(() => { modal.classList.add('hidden'); renderTicTacBoard(); const scoreWinner = ticTacScore.X > ticTacScore.O ? 'X' : ticTacScore.O > ticTacScore.X ? 'O' : 'Seri'; alert(`🤝 Permainan Selesai! Pemenang berdasarkan skor: ${scoreWinner}`); }, 2000);
+            } else {
+                setTimeout(() => { currentPlayer = nextPlayer; const currentPlayerDiv = document.getElementById('current-player'); if (currentPlayerDiv) { const colorClass = nextPlayer === 'X' ? 'text-green-600' : 'text-yellow-600'; currentPlayerDiv.innerHTML = `Giliran: <span class="${colorClass}">${currentPlayer}</span>`; } modal.classList.add('hidden'); renderTicTacBoard(); }, 2000);
+            }
+        }
+      } else {
+        SoundManager.playWrong();
+        questionPanel.innerHTML = `<div class="text-center py-6"><div class="text-7xl mb-4 animate-pulse">❌</div><p class="text-3xl font-black text-red-500 mb-2">Salah!</p><p class="text-gray-600 mt-2">Kesempatan menjawab hangus.</p><p class="mt-6 text-lg text-gray-600 font-medium">Giliran beralih ke pemain <span class="font-bold ${nextPlayerColorText}">${nextPlayer}</span></p></div>`;
+        setTimeout(() => { currentPlayer = nextPlayer; const currentPlayerDiv = document.getElementById('current-player'); if (currentPlayerDiv) { const colorClass = nextPlayer === 'X' ? 'text-green-600' : 'text-yellow-600'; currentPlayerDiv.innerHTML = `Giliran: <span class="${colorClass}">${currentPlayer}</span>`; } modal.classList.add('hidden'); }, 2500);
+      }
+    }
+
+    function resetTicTacToe() { SoundManager.playClick(); ticTacScore = { X: 0, O: 0 }; renderTicTacToe(); }
+
+    function renderRefleksi() {
+      currentStage = 'refleksi';
+      const app = document.getElementById('app');
+      app.innerHTML = `
+        <div class="min-h-full p-8">
+          <div class="max-w-4xl mx-auto">
+            <button onclick="goToStage('menu')" class="primary-btn btn-gradient-primary mb-6 px-6 py-3 text-white rounded-full font-bold shadow-lg">← Kembali ke Menu</button>
+            <div class="bg-white/95 backdrop-blur rounded-3xl p-8 shadow-2xl fade-in border-4 border-orange-200">
+              <h2 class="text-3xl font-bold text-center mb-6 text-orange-600">📝 Refleksi Pembelajaran</h2>
+              <form id="refleksi-form" class="space-y-6">
+                <div><label for="nama_siswa" class="block font-semibold mb-2 text-lg text-orange-900">Nama Siswa:</label><input type="text" id="nama_siswa" class="w-full p-4 border-2 border-orange-300 rounded-xl text-lg focus:ring-2 focus:ring-orange-500 outline-none" required></div>
+                <div><label for="kelompok_siswa" class="block font-semibold mb-2 text-lg text-orange-900">Kelompok:</label><select id="kelompok_siswa" class="w-full p-4 border-2 border-orange-300 rounded-xl text-lg focus:ring-2 focus:ring-orange-500 outline-none" required><option value="">Pilih Kelompok</option><option value="Kelompok 1">Kelompok 1</option><option value="Kelompok 2">Kelompok 2</option><option value="Kelompok 3">Kelompok 3</option></select></div>
+                <div><label for="pemahaman" class="block font-semibold mb-2 text-lg text-orange-900">1. Apa yang kamu pahami tentang zat aditif dan adiktif?</label><textarea id="pemahaman" rows="3" class="w-full p-4 border-2 border-orange-300 rounded-xl text-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Tuliskan pemahamanmu..." required></textarea></div>
+                <div><label for="manfaat" class="block font-semibold mb-2 text-lg text-orange-900">2. Apa manfaat yang kamu dapat dari pembelajaran hari ini?</label><textarea id="manfaat" rows="3" class="w-full p-4 border-2 border-orange-300 rounded-xl text-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Tuliskan manfaat yang kamu rasakan..." required></textarea></div>
+                <div><label for="penerapan" class="block font-semibold mb-2 text-lg text-orange-900">3. Bagaimana kamu akan menerapkan pengetahuan ini dalam kehidupan sehari-hari?</label><textarea id="penerapan" rows="3" class="w-full p-4 border-2 border-orange-300 rounded-xl text-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Tuliskan rencana penerapanmu..." required></textarea></div>
+                <div><label for="kesulitan" class="block font-semibold mb-2 text-lg text-orange-900">4. Apa kesulitan yang kamu hadapi selama pembelajaran?</label><textarea id="kesulitan" rows="3" class="w-full p-4 border-2 border-orange-300 rounded-xl text-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Tuliskan kesulitanmu..." required></textarea></div>
+                <div><label for="saran" class="block font-semibold mb-2 text-lg text-orange-900">5. Apa saran kamu untuk pembelajaran berikutnya?</label><textarea id="saran" rows="3" class="w-full p-4 border-2 border-orange-300 rounded-xl text-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Tuliskan saranmu..." required></textarea></div>
+                <div>
+                  <label class="block font-semibold mb-2 text-lg text-orange-900">6. Tingkat Kepuasan Pembelajaran:</label>
+                  <div class="flex justify-center gap-6 text-5xl p-4 bg-orange-50 rounded-2xl">
+                    <button type="button" onclick="setRating(1)" class="hover:scale-125 transition transform">😫</button><button type="button" onclick="setRating(2)" class="hover:scale-125 transition transform">☹️</button><button type="button" onclick="setRating(3)" class="hover:scale-125 transition transform">🙂</button><button type="button" onclick="setRating(4)" class="hover:scale-125 transition transform">😊</button><button type="button" onclick="setRating(5)" class="hover:scale-125 transition transform">🤩</button>
+                  </div>
+                  <input type="hidden" id="rating" required><p id="rating-text" class="text-center mt-3 font-bold text-xl text-orange-600"></p>
+                </div>
+                <button type="submit" class="secondary-btn btn-gradient-secondary w-full py-4 text-white rounded-xl text-xl font-bold shadow-lg transform active:scale-95 transition">💾 Simpan Refleksi</button>
+              </form>
+              <button onclick="downloadRefleksi()" class="accent-btn btn-gradient-accent w-full mt-4 py-4 text-white rounded-xl text-xl font-bold shadow-lg transform active:scale-95 transition">📥 Download Refleksi (PDF)</button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.getElementById('refleksi-form').addEventListener('submit', handleRefleksiSubmit);
+    }
+
+    function setRating(value) { SoundManager.playClick(); document.getElementById('rating').value = value; document.getElementById('rating-text').textContent = ['Sangat Tidak Puas', 'Tidak Puas', 'Cukup', 'Puas', 'Sangat Puas'][value - 1]; }
+    function handleRefleksiSubmit(e) {
+      e.preventDefault(); SoundManager.playClick();
+      const formData = { nama: document.getElementById('nama_siswa').value, kelompok: document.getElementById('kelompok_siswa').value, pemahaman: document.getElementById('pemahaman').value, manfaat: document.getElementById('manfaat').value, penerapan: document.getElementById('penerapan').value, kesulitan: document.getElementById('kesulitan').value, saran: document.getElementById('saran').value, rating: document.getElementById('rating').value, timestamp: new Date().toLocaleString('id-ID') };
+      localStorage.setItem('refleksi_' + Date.now(), JSON.stringify(formData));
+      alert('✅ Refleksi berhasil disimpan!'); e.target.reset(); document.getElementById('rating-text').textContent = '';
+    }
+
+    function downloadRefleksi() {
+      SoundManager.playClick();
+      const refleksiKeys = Object.keys(localStorage).filter(key => key.startsWith('refleksi_'));
+      if (refleksiKeys.length === 0) { alert('Belum ada refleksi yang disimpan!'); return; }
+      const { jsPDF } = window.jspdf; const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth(); const pageHeight = doc.internal.pageSize.getHeight(); const margin = 15; let yPos = 20;
+      doc.setFontSize(16); doc.setFont("helvetica", "bold"); doc.text("REFLEKSI PEMBELAJARAN", pageWidth / 2, yPos, { align: "center" }); yPos += 7;
+      doc.setFontSize(14); doc.text("Zat Aditif dan Adiktif", pageWidth / 2, yPos, { align: "center" }); yPos += 15;
+      refleksiKeys.forEach((key, idx) => {
+        const data = JSON.parse(localStorage.getItem(key));
+        if (yPos > pageHeight - 60) { doc.addPage(); yPos = 20; }
+        doc.setFillColor(240, 240, 240); doc.rect(margin, yPos - 5, pageWidth - (margin * 2), 20, 'F');
+        doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.text(`Refleksi #${idx + 1}`, margin + 5, yPos); yPos += 6;
+        doc.setFontSize(10); doc.text(`Nama: ${data.nama}`, margin + 5, yPos); doc.text(`Waktu: ${data.timestamp}`, pageWidth - margin - 5, yPos, { align: 'right' }); yPos += 5;
+        doc.text(`Kelompok: ${data.kelompok}`, margin + 5, yPos); doc.text(`Rating: ${data.rating}/5`, pageWidth - margin - 5, yPos, { align: 'right' }); yPos += 10;
+        doc.setFont("helvetica", "normal");
+        const questions = [{ q: "1. Pemahaman", a: data.pemahaman }, { q: "2. Manfaat", a: data.manfaat }, { q: "3. Penerapan", a: data.penerapan }, { q: "4. Kesulitan", a: data.kesulitan }, { q: "5. Saran", a: data.saran }];
+        questions.forEach(item => {
+             if (yPos > pageHeight - 20) { doc.addPage(); yPos = 20; }
+             doc.setFont("helvetica", "bold"); doc.text(item.q, margin + 5, yPos); yPos += 5;
+             doc.setFont("helvetica", "normal"); const splitText = doc.splitTextToSize(item.a, pageWidth - (margin * 2) - 10); doc.text(splitText, margin + 10, yPos); yPos += (splitText.length * 5) + 3;
+        });
+        yPos += 5;
+      });
+      doc.save("Refleksi_Pembelajaran.pdf");
+    }
+
+    function renderAsesmen() {
+        currentStage = 'asesmen';
+        if (asesmenAnswers.length === 0) { asesmenCurrentSoal = 0; asesmenScore = 0; }
+        const currentQ = bankSoalAsesmen[asesmenCurrentSoal];
+        const progress = ((asesmenCurrentSoal) / bankSoalAsesmen.length) * 100;
+        const app = document.getElementById('app');
+        app.innerHTML = `
+            <div class="min-h-full p-8">
+                <div class="max-w-4xl mx-auto">
+                    <div class="flex justify-between items-center mb-6"><button onclick="goToStage('menu')" class="primary-btn btn-gradient-primary px-6 py-2 text-white rounded-full font-bold shadow-lg text-sm">← Menu</button><div class="text-xl font-bold text-gray-700 bg-white px-4 py-2 rounded-lg shadow">Soal ${asesmenCurrentSoal + 1} / ${bankSoalAsesmen.length}</div></div>
+                    <div class="bg-white/95 backdrop-blur rounded-3xl p-8 shadow-2xl fade-in border-4 border-red-200">
+                        <div class="w-full bg-gray-200 rounded-full h-4 mb-8"><div class="bg-gradient-to-r from-red-400 to-pink-500 h-4 rounded-full transition-all duration-500" style="width: ${progress}%"></div></div>
+                        <div class="mb-8"><h2 class="text-2xl font-bold text-gray-800 leading-relaxed">${currentQ.tanya}</h2></div>
+                        <div class="space-y-4">${currentQ.opsi.map((opsi, idx) => `<button onclick="handleAsesmenAnswer(${idx})" class="w-full text-left p-5 rounded-xl border-2 border-gray-200 hover:border-red-400 hover:bg-red-50 transition-all duration-200 text-lg font-medium text-gray-700 group"><span class="inline-block w-8 h-8 bg-gray-200 text-gray-600 rounded-full text-center leading-8 mr-3 font-bold group-hover:bg-red-500 group-hover:text-white transition">${String.fromCharCode(65 + idx)}</span>${opsi}</button>`).join('')}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function handleAsesmenAnswer(selectedIndex) {
+        const currentQ = bankSoalAsesmen[asesmenCurrentSoal];
+        const isCorrect = selectedIndex === currentQ.kunci;
+        asesmenAnswers.push({ soal: currentQ.tanya, jawaban: selectedIndex, kunci: currentQ.kunci, benar: isCorrect });
+        if (isCorrect) { asesmenScore += (100 / bankSoalAsesmen.length); SoundManager.playCorrect(); } else { SoundManager.playWrong(); }
+        const buttons = document.querySelectorAll('.space-y-4 button');
+        buttons[selectedIndex].classList.remove('hover:bg-red-50', 'border-gray-200');
+        buttons[selectedIndex].classList.add(isCorrect ? 'bg-green-100' : 'bg-red-100', isCorrect ? 'border-green-500' : 'border-red-500');
+        if (!isCorrect) { buttons[currentQ.kunci].classList.add('bg-green-100', 'border-green-500'); }
+        setTimeout(() => {
+            asesmenCurrentSoal++;
+            if (asesmenCurrentSoal < bankSoalAsesmen.length) { renderAsesmen(); } else { renderAsesmenResult(); }
+        }, 1500);
+    }
+
+    function renderAsesmenResult() {
+        const finalScore = Math.round(asesmenScore);
+        let feedback = ""; let emoji = ""; let color = "";
+        if (finalScore >= 90) { feedback = "Luar Biasa! Kamu ahli analisis!"; emoji = "🏆"; color = "text-green-600"; }
+        else if (finalScore >= 75) { feedback = "Hebat! Pemahamanmu sangat baik."; emoji = "🌟"; color = "text-blue-600"; }
+        else if (finalScore >= 60) { feedback = "Cukup Baik, tingkatkan lagi ya."; emoji = "👍"; color = "text-yellow-600"; }
+        else { feedback = "Belajar lagi yuk di materi & investigasi!"; emoji = "📚"; color = "text-red-600"; }
+        if (finalScore >= 75) SoundManager.playWin();
+        const app = document.getElementById('app');
+        app.innerHTML = `
+            <div class="min-h-full p-8 flex items-center justify-center">
+                <div class="max-w-2xl w-full bg-white/95 backdrop-blur rounded-3xl p-10 shadow-2xl border-4 border-purple-200 text-center fade-in">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Hasil Asesmen Formatif</h2>
+                    <div class="text-9xl mb-6 animate-bounce">${emoji}</div>
+                    <div class="text-6xl font-black ${color} mb-4">${finalScore}</div>
+                    <p class="text-2xl font-bold text-gray-700 mb-8">${feedback}</p>
+                    <div class="grid grid-cols-2 gap-4 mb-8 text-left bg-gray-50 p-6 rounded-xl">
+                        <div><p class="text-sm text-gray-500">Jumlah Soal</p><p class="text-xl font-bold text-gray-800">${bankSoalAsesmen.length}</p></div>
+                        <div><p class="text-sm text-gray-500">Jawaban Benar</p><p class="text-xl font-bold text-green-600">${asesmenAnswers.filter(a => a.benar).length}</p></div>
+                    </div>
+                    <div class="flex justify-center gap-4">
+                        <button onclick="asesmenAnswers=[]; renderAsesmen()" class="px-8 py-3 bg-blue-500 text-white rounded-full font-bold shadow-lg hover:bg-blue-600 transition">🔄 Coba Lagi</button>
+                        <button onclick="goToStage('menu')" class="px-8 py-3 bg-gray-500 text-white rounded-full font-bold shadow-lg hover:bg-gray-600 transition">🏠 Ke Menu</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function goToStage(stage) {
+      SoundManager.playClick();
+      switch(stage) {
+        case 'menu': renderMenu(); break;
+        case 'materi': renderMateri(); break;
+        case 'icebreaking': renderIceBreaking(); break;
+        case 'investigasi': renderInvestigasi(); break;
+        case 'tictactoe': renderTicTacToe(); break;
+        case 'refleksi': renderRefleksi(); break;
+        case 'asesmen': renderAsesmen(); break;
+      }
+    }
+
+    initApp();
+  </script>
+ </body>
+</html>
