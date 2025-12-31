@@ -132,6 +132,103 @@
     #sound-control:hover {
       transform: scale(1.1);
     }
+
+    /* TOMBOL SIMPULKAN */
+    #summary-btn {
+      position: fixed;
+      top: 85px; /* Di bawah tombol sound */
+      right: 20px;
+      z-index: 100;
+      background: linear-gradient(to right, #8e2de2, #4a00e0);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+      cursor: pointer;
+      font-weight: bold;
+      transition: transform 0.2s;
+      border: 2px solid white;
+    }
+    #summary-btn:hover {
+      transform: scale(1.05);
+    }
+
+    /* TOMBOL KAMERA (KIRI ATAS) */
+    #camera-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 100;
+      background: white;
+      padding: 10px;
+      border-radius: 50%;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      cursor: pointer;
+      font-size: 1.5rem;
+      transition: transform 0.2s;
+    }
+    #camera-btn:hover {
+      transform: scale(1.1) rotate(10deg);
+    }
+
+    /* TOMBOL AI (KANAN BAWAH) */
+    #ai-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 100;
+      background: white;
+      padding: 10px;
+      border-radius: 50%;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      cursor: pointer;
+      font-size: 2rem;
+      transition: transform 0.2s;
+      border: 4px solid #3b82f6; /* Blue border */
+    }
+    #ai-btn:hover {
+      transform: scale(1.1) rotate(-10deg);
+    }
+
+    /* STYLES FOR FLIP CARD */
+    .flip-container {
+      perspective: 1000px;
+    }
+    .flip-card {
+      width: 100%;
+      height: 250px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s;
+      cursor: pointer;
+    }
+    .flip-card.flipped {
+      transform: rotateY(180deg);
+    }
+    .flip-front, .flip-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+    .flip-front {
+      background: white;
+      color: #1f2937;
+      border: 4px solid #60a5fa;
+    }
+    .flip-back {
+      background: linear-gradient(to bottom right, #3b82f6, #2563eb);
+      color: white;
+      transform: rotateY(180deg);
+      border: 4px solid white;
+    }
     
     .materi-card {
         transition: all 0.3s ease;
@@ -144,6 +241,168 @@
  </head>
  <body class="h-full">
   <button id="sound-control" onclick="toggleSound()" title="Matikan/Hidupkan Suara">🔊</button>
+  <button id="summary-btn" onclick="toggleSummaryModal()" title="Simpulkan Pembelajaran">🧠 Simpulkan</button>
+  <!-- TOMBOL KAMERA -->
+  <button id="camera-btn" onclick="openCameraModal()" title="Foto Ekspresi Belajar">📷</button>
+  <!-- TOMBOL AI MINI -->
+  <button id="ai-btn" onclick="toggleAiModal()" title="Tanya AI Mini">🤖</button>
+
+  <!-- MODAL KAMERA -->
+  <div id="camera-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center px-4">
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeCameraModal()"></div>
+    <div class="relative bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md flex flex-col items-center">
+        <button onclick="closeCameraModal()" class="absolute top-4 right-4 text-gray-500 hover:text-red-500 text-2xl font-bold">×</button>
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">📸 Foto Ekspresi Kamu</h2>
+        
+        <div class="relative w-full aspect-[4/3] bg-black rounded-xl overflow-hidden mb-4 border-4 border-gray-200 shadow-inner">
+            <video id="camera-stream" autoplay playsinline class="w-full h-full object-cover transform -scale-x-100"></video>
+            <img id="camera-result" class="hidden w-full h-full object-cover transform -scale-x-100" alt="Hasil Foto">
+            <canvas id="camera-canvas" class="hidden"></canvas>
+        </div>
+
+        <div id="camera-controls" class="flex gap-4 w-full justify-center">
+            <button onclick="takeSnapshot()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-full font-bold shadow-lg flex items-center gap-2">
+                <span>🔘</span> Ambil Foto
+            </button>
+        </div>
+
+        <div id="result-controls" class="hidden flex gap-4 w-full justify-center">
+            <button onclick="retakePhoto()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-full font-bold shadow-lg">
+                🔄 Ulangi
+            </button>
+            <a id="download-link" href="#" download="ekspresi-belajar.png" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-full font-bold shadow-lg flex items-center gap-2">
+                📥 Download
+            </a>
+        </div>
+        <p class="text-xs text-gray-500 mt-4 text-center">Pastikan izinkan akses kamera di browser.</p>
+    </div>
+  </div>
+
+  <!-- MODAL AI -->
+  <div id="ai-modal" class="hidden fixed inset-0 z-[200] flex items-end sm:items-center justify-end sm:justify-center px-4 pb-4 sm:p-0 pointer-events-none">
+    <div class="absolute inset-0 bg-black/20 backdrop-blur-[1px] transition-opacity pointer-events-auto" onclick="toggleAiModal()"></div>
+    <div class="relative bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm h-[500px] flex flex-col pointer-events-auto border-4 border-blue-200">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-4 border-b pb-2">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl">🤖</span>
+                <h3 class="font-bold text-gray-800">AI Mini Assistant</h3>
+            </div>
+            <button onclick="toggleAiModal()" class="text-gray-400 hover:text-red-500 text-xl font-bold">×</button>
+        </div>
+        
+        <!-- Chat Area -->
+        <div id="ai-chat-box" class="flex-grow overflow-y-auto mb-4 space-y-3 p-2 bg-gray-50 rounded-lg">
+            <div class="flex items-start gap-2">
+                <div class="bg-blue-100 p-2 rounded-lg rounded-tl-none text-sm text-gray-700">
+                    Halo! Saya AI Mini. Ada yang bisa saya bantu tentang Zat Aditif atau Adiktif?
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="flex gap-2">
+            <input type="text" id="ai-input" class="flex-grow border rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Ketik pertanyaan... (misal: MSG, Rokok)">
+            <button onclick="handleAiChat()" class="bg-blue-500 text-white rounded-full p-2 px-3 hover:bg-blue-600 transition shadow-md">
+                ➤
+            </button>
+        </div>
+    </div>
+  </div>
+
+  <!-- MODAL SUMMARY (FLIP CARDS) -->
+  <div id="summary-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center px-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="toggleSummaryModal()"></div>
+    <div class="relative bg-white/95 p-8 rounded-3xl shadow-2xl w-full max-w-5xl h-[90vh] overflow-auto flex flex-col">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-3xl font-bold text-blue-800">🧠 Refleksi & Kesimpulan Hari Ini</h2>
+            <button onclick="toggleSummaryModal()" class="text-gray-500 hover:text-red-500 text-3xl font-bold">×</button>
+        </div>
+        <p class="text-center text-gray-600 mb-8 text-lg">Klik kartu untuk membalik dan melihat kunci kesimpulan!</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 flex-grow">
+            
+            <!-- Card 1 -->
+            <div class="flip-container">
+                <div class="flip-card" onclick="this.classList.toggle('flipped'); SoundManager.playClick()">
+                    <div class="flip-front">
+                        <div>
+                            <div class="text-5xl mb-4">🤔</div>
+                            <h3 class="text-xl font-bold">Apa perbedaan inti zat Aditif dan Adiktif?</h3>
+                            <p class="text-sm text-blue-500 mt-4">(Klik untuk cek jawaban)</p>
+                        </div>
+                    </div>
+                    <div class="flip-back">
+                        <div>
+                            <h3 class="text-xl font-bold mb-2">Jawabannya:</h3>
+                            <p class="text-lg"><strong>Aditif:</strong> Bahan tambahan pangan (pewarna, pengawet) untuk kualitas makanan.<br><br><strong>Adiktif:</strong> Zat yang menyebabkan kecanduan/ketergantungan (rokok, narkoba).</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="flip-container">
+                <div class="flip-card" onclick="this.classList.toggle('flipped'); SoundManager.playClick()">
+                    <div class="flip-front">
+                        <div>
+                            <div class="text-5xl mb-4">🌿 vs 🧪</div>
+                            <h3 class="text-xl font-bold">Mengapa zat aditif alami lebih disarankan?</h3>
+                            <p class="text-sm text-blue-500 mt-4">(Klik untuk cek jawaban)</p>
+                        </div>
+                    </div>
+                    <div class="flip-back">
+                        <div>
+                            <h3 class="text-xl font-bold mb-2">Jawabannya:</h3>
+                            <p class="text-lg">Karena lebih <strong>aman bagi kesehatan</strong>, mudah dicerna tubuh, dan mengandung nutrisi, meskipun warnanya mungkin tidak semencolok zat buatan.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="flip-container">
+                <div class="flip-card" onclick="this.classList.toggle('flipped'); SoundManager.playClick()">
+                    <div class="flip-front">
+                        <div>
+                            <div class="text-5xl mb-4">☠️</div>
+                            <h3 class="text-xl font-bold">Apa bahaya terbesar penyalahgunaan Zat Adiktif?</h3>
+                            <p class="text-sm text-blue-500 mt-4">(Klik untuk cek jawaban)</p>
+                        </div>
+                    </div>
+                    <div class="flip-back">
+                        <div>
+                            <h3 class="text-xl font-bold mb-2">Jawabannya:</h3>
+                            <p class="text-lg">Merusak <strong>sistem saraf pusat</strong> (otak), menyebabkan kerusakan organ vital, ketergantungan fisik/mental, hingga kematian (overdosis).</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 4 -->
+            <div class="flip-container">
+                <div class="flip-card" onclick="this.classList.toggle('flipped'); SoundManager.playClick()">
+                    <div class="flip-front">
+                        <div>
+                            <div class="text-5xl mb-4">🛡️</div>
+                            <h3 class="text-xl font-bold">Bagaimana sikap kita terhadap Narkoba?</h3>
+                            <p class="text-sm text-blue-500 mt-4">(Klik untuk cek jawaban)</p>
+                        </div>
+                    </div>
+                    <div class="flip-back">
+                        <div>
+                            <h3 class="text-xl font-bold mb-2">Jawabannya:</h3>
+                            <p class="text-lg text-yellow-300 font-bold">KATAKAN TIDAK PADA NARKOBA!</p>
+                            <p class="mt-2">Pilih pergaulan positif, dekatkan diri pada agama, dan fokus pada prestasi.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+  </div>
+
   <div id="app" class="h-full w-full overflow-auto rainbow-bg"></div>
   <script>
     // --- SOUND MANAGER (Web Audio API) ---
@@ -195,6 +454,170 @@
       const btn = document.getElementById('sound-control');
       btn.textContent = SoundManager.isMuted ? '🔇' : '🔊';
       if (!SoundManager.isMuted) SoundManager.init();
+    }
+
+    function toggleSummaryModal() {
+        SoundManager.playClick();
+        const modal = document.getElementById('summary-modal');
+        modal.classList.toggle('hidden');
+        
+        // Reset flipped cards when closing
+        if (modal.classList.contains('hidden')) {
+            document.querySelectorAll('.flip-card').forEach(card => card.classList.remove('flipped'));
+        }
+    }
+
+    // --- AI MINI LOGIC ---
+    function toggleAiModal() {
+        SoundManager.playClick();
+        const modal = document.getElementById('ai-modal');
+        modal.classList.toggle('hidden');
+        if (!modal.classList.contains('hidden')) {
+            document.getElementById('ai-input').focus();
+        }
+    }
+
+    function handleAiChat() {
+        const input = document.getElementById('ai-input');
+        const chatBox = document.getElementById('ai-chat-box');
+        const text = input.value.trim().toLowerCase();
+        
+        if (!text) return;
+
+        // User Message
+        chatBox.innerHTML += `
+            <div class="flex items-center justify-end gap-2">
+                <div class="bg-green-100 p-2 rounded-lg rounded-tr-none text-sm text-gray-700 text-right">
+                    ${input.value}
+                </div>
+            </div>
+        `;
+        
+        input.value = '';
+        SoundManager.playClick(); 
+
+        // Simple Logic for AI Response based on database
+        let response = "Maaf, saya tidak mengerti. Coba ketik nama zat seperti 'MSG', 'Rokok', atau 'Pewarna'.";
+        
+        // Search in databaseZat
+        const foundKey = Object.keys(databaseZat).find(k => 
+            k.toLowerCase() === text || 
+            k.toLowerCase().includes(text) || 
+            (databaseZat[k].keywords && databaseZat[k].keywords.some(kw => text.includes(kw)))
+        );
+        
+        if (foundKey) {
+            const data = databaseZat[foundKey];
+            response = `<strong>${foundKey}</strong> adalah ${data.kategori}. <br><strong>Fungsi/Efek:</strong> ${data.fungsi}.`;
+        } else if (text.includes('halo') || text.includes('hai')) {
+            response = "Halo! Silakan tanya tentang zat aditif (seperti MSG, Tartrazin) atau adiktif (seperti Kopi, Rokok).";
+        } else if (text.includes('siapa kamu')) {
+            response = "Saya AI Mini, asisten cerdas untuk membantumu belajar!";
+        } else if (text.includes('terima kasih') || text.includes('makasih')) {
+            response = "Sama-sama! Semangat belajarnya ya! 🚀";
+        }
+
+        // AI Message (Delayed slightly)
+        setTimeout(() => {
+            chatBox.innerHTML += `
+                <div class="flex items-start gap-2">
+                    <div class="bg-blue-100 p-2 rounded-lg rounded-tl-none text-sm text-gray-700">
+                        ${response}
+                    </div>
+                </div>
+            `;
+            chatBox.scrollTop = chatBox.scrollHeight;
+            SoundManager.playTick(); 
+        }, 500);
+    }
+
+    // Enter key support for AI chat
+    document.getElementById('ai-input').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            handleAiChat();
+        }
+    });
+
+    // --- KAMERA LOGIC ---
+    let cameraStream = null;
+
+    async function openCameraModal() {
+        SoundManager.playClick();
+        const modal = document.getElementById('camera-modal');
+        const video = document.getElementById('camera-stream');
+        const img = document.getElementById('camera-result');
+        const btnControls = document.getElementById('camera-controls');
+        const resControls = document.getElementById('result-controls');
+
+        modal.classList.remove('hidden');
+        img.classList.add('hidden');
+        video.classList.remove('hidden');
+        btnControls.classList.remove('hidden');
+        resControls.classList.add('hidden');
+
+        try {
+            cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = cameraStream;
+        } catch (err) {
+            console.error("Gagal akses kamera:", err);
+            alert("Tidak dapat mengakses kamera. Pastikan Anda mengizinkan akses kamera di browser.");
+            closeCameraModal();
+        }
+    }
+
+    function closeCameraModal() {
+        const modal = document.getElementById('camera-modal');
+        modal.classList.add('hidden');
+        
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream = null;
+        }
+    }
+
+    function takeSnapshot() {
+        SoundManager.playClick();
+        const video = document.getElementById('camera-stream');
+        const canvas = document.getElementById('camera-canvas');
+        const img = document.getElementById('camera-result');
+        const btnControls = document.getElementById('camera-controls');
+        const resControls = document.getElementById('result-controls');
+        const downloadLink = document.getElementById('download-link');
+
+        // Set canvas size match video
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        // Draw video to canvas
+        const ctx = canvas.getContext('2d');
+        // Mirror effect for canvas drawing
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Convert to data URL
+        const dataURL = canvas.toDataURL('image/png');
+        img.src = dataURL;
+        downloadLink.href = dataURL;
+
+        // UI Updates
+        video.classList.add('hidden');
+        img.classList.remove('hidden');
+        btnControls.classList.add('hidden');
+        resControls.classList.remove('hidden');
+    }
+
+    function retakePhoto() {
+        SoundManager.playClick();
+        const video = document.getElementById('camera-stream');
+        const img = document.getElementById('camera-result');
+        const btnControls = document.getElementById('camera-controls');
+        const resControls = document.getElementById('result-controls');
+
+        img.classList.add('hidden');
+        video.classList.remove('hidden');
+        btnControls.classList.remove('hidden');
+        resControls.classList.add('hidden');
     }
 
     // Database Zat Aditif dan Adiktif
